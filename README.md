@@ -228,7 +228,7 @@
 > - 除了可以锁this，还可以锁其他任意的对象作为“对象监视器”
 > - 优点：synchronized(非this)代码块中的程序和同步方法是异步的，不与其他锁的this同步方法争抢this锁，则可以大大提高效率
 > - 只要对象不变，即使对象的属性被改变，运行的结果还是同步的
-> - ![图1-2 同步代码块的三个结论.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-1%20%E7%BA%BF%E7%A8%8B%E5%85%AD%E7%A7%8D%E7%8A%B6%E6%80%81.jpg?raw=true)
+> - ![图1-2 同步代码块的三个结论.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-2%20%E5%90%8C%E6%AD%A5%E4%BB%A3%E7%A0%81%E5%9D%97%E7%9A%84%E4%B8%89%E4%B8%AA%E7%BB%93%E8%AE%BA.jpg?raw=true)
 
 #### 6) 添加static
 > - 从表现来看，加跟不加没有什么本质的区别
@@ -236,7 +236,11 @@
         
 <h3 id='2.2'>2.2 线程安全与非线程安全</h3>  
         
-#### 1) 不共享数据的情况
+#### 1) 影响线程安全的三个因素
+> - 原子性
+> - 可见性
+> - 随机性
+#### 2) 不共享数据的情况
 > - 创建多个实例，不同实例之间肯定是不会共享数据的
                 
                 /**
@@ -366,7 +370,7 @@
                     at practice.HelloWorld.lambda$0(HelloWorld.java:83)
 
         
-#### 2) 共享数据但不安全的情况
+#### 3) 共享数据但不安全的情况
 > - 共享数据但不安全的情况，称为“非线程安全”，主要指多个线程对同一个对象中的同一个实例变量（或者叫“实例域”）进行操作的时候会出现值被更改，值不同步的情况，进而影响程序的执行流程。即所谓“脏读”
 > - 而如果更改的是方法中的局部变量则不会存在线程不安全的问题，因为变量都不可能共享
                 
@@ -483,7 +487,7 @@
                 由 t2计算，i的值为 5
 
         
-#### 3) 共享数据且线程安全的情况
+#### 4) 共享数据且线程安全的情况
 > - 共享数据且线程安全，加关键字synchronized 使得多个线程在执行run()方法的时候，以排队的方式进行。
 > - 或者在此版本的代码中，我发现只要将数据变化的那一部分放在打印语句中，就不会出现“非线程安全”。这是因为Println()这个方法本书就是同步的。
                 
@@ -551,17 +555,22 @@
                 由 t1计算，i的值为 3
                 由 t3计算，i的值为 4
                 由 t4计算，i的值为 5
-#### 4) 其他非线程安全的情况
+#### 5) 其他非线程安全的情况
 > - i++ 不是原子操作
 >> - 从内存中取出i的值
 >> - 计算i的值
 >> - 将i的值写道内存中
+> - 使用AtomicInteger类可以避免i++的非原子性，其实就是原子性的加一操作。但是使用原子性变量也不能完全保证原子性，因为还有随机性，随机性的保证还是需要同步去解决
+                
+                private AtomicInteger i1 = new AtomicInteger(0);
+                i1.incrementAndGet();
+
         
 <h3 id='2.3'>2.3 多线程的死锁</h3>  
                              
 #### 1) 一个死锁的case
 > - 程序设计的时候应该避免双方互相持有对象的锁的情况
-![图1-3 死锁的case.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-1%20%E7%BA%BF%E7%A8%8B%E5%85%AD%E7%A7%8D%E7%8A%B6%E6%80%81.jpg?raw=true)
+![图1-3 死锁的case.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-3%20%E6%AD%BB%E9%94%81%E7%9A%84case.jpg?raw=true)
                 
         
 <h3 id='2.4'>2.4 volatile关键字</h3>  
@@ -573,4 +582,5 @@
 > - volatile关键字只能修饰变量，而synchronized关键字可以修饰方法
 > - volatile关键字不会发生堵塞，而synchronized关键字会出现堵塞
 #### 3) volatile的非原子特性
-> - 
+> - 变量在内存中的工作过程图
+![1-4 变量在内存中的工作过程.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-3%20%E6%AD%BB%E9%94%81%E7%9A%84case.jpg?raw=true)
