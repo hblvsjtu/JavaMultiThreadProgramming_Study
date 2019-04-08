@@ -1284,7 +1284,7 @@
 > - JDK5中出现的技术，可以方便地对一个代码段进行原子操作，而不必像synchronized那样需要锁住对象
 > - 
 > - 主要使用lock()方法和unlock()方法
->>>>>> ![图4-1 ReentranLock类的基本使用.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-5%20%E7%BA%BF%E7%A8%8B%E7%8A%B6%E6%80%81%E5%88%87%E6%8D%A2.jpg?raw=true)
+>>>>>> ![图4-1 ReentranLock类的基本使用.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE4-1%20ReentranLock%E7%B1%BB%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.jpg?raw=true)
                 
 #### 2) 等待/通知机制
 > - 同样利用wait()和notify()机制，但是使用上比synchronized更加方便
