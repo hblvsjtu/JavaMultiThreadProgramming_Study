@@ -22,7 +22,11 @@
 ### [3.3 方法join 类ThreadLocal和类inheritableThreadLocal](#3.3)
 ## [四、Lock的使用](#4)
 ### [4.1 等待/通知机制](#4.1)
-### [4.2 通过管道进行线程间通讯](#4.2)
+### [4.2 使用ReentrantLock类](#4.2)
+### [4.3 ReentrantReadWriteLock](#4.3)
+## [五、其他](#5)
+### [5.1 定时器](#5.1)
+### [5.2 Callable和Future](#5.2)
         
 ------      
         
@@ -892,7 +896,7 @@
 >> - 线程正在等待某个消息
 >> - 使用suspend()被挂起
 > - 每个所对象都有两个队列，一个是就绪队列，另一个是阻塞队列
->>>>>> ![图1-5 线程状态切换.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-4%20%E5%8F%98%E9%87%8F%E5%9C%A8%E5%86%85%E5%AD%98%E4%B8%AD%E7%9A%84%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B.jpg?raw=true)
+>>>>>> ![图1-5 线程状态切换.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-5%20%E7%BA%BF%E7%A8%8B%E7%8A%B6%E6%80%81%E5%88%87%E6%8D%A2.jpg?raw=true)
 
             
 <h3 id='3.2'>3.2 通过管道进行线程间通讯</h3>
@@ -1241,7 +1245,7 @@
                 ThreadB 退出
 #### 3) 字符流
 > - PipedReader & PipedWriter
-> - 
+                
 <h3 id='3.3'>3.3 方法join 类ThreadLocal和类inheritableThreadLocal</h3>
             
 #### 1) 方法join
@@ -1258,7 +1262,149 @@
 #### 3) 类inheritableThreadLocal
 > - 可以在子线程中获取父线程中的值
 
-<h3 id='3.4'>3.4 类inheritableThreadLocal的使用</h3>
+                
+
+        
+------      
+        
+<h2 id='4'>四、Lock锁</h2>
+<h3 id='4.1'>4.1 关于读写锁的问题</h3>
             
-#### 1) 对象锁
+#### 1) 介绍
+> - 读相关的锁，叫共享锁
+> - 写相关的锁，叫排他锁
+> - 多个读锁之间不互斥，读锁和写锁之间互斥，写锁与写锁互斥
+> - ReentrantLock类具有完全排他的效果，虽然可以保证线程安全，但是效率非常低下
+> - ReentrantReadWriteLock类可以加快效率
+                
+
+<h3 id='4.2'>4.2 使用ReentrantLock类</h3>
+            
+#### 1) 介绍
+> - JDK5中出现的技术，可以方便地对一个代码段进行原子操作，而不必像synchronized那样需要锁住对象
 > - 
+> - 主要使用lock()方法和unlock()方法
+>>>>>> ![图4-1 ReentranLock类的基本使用.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-5%20%E7%BA%BF%E7%A8%8B%E7%8A%B6%E6%80%81%E5%88%87%E6%8D%A2.jpg?raw=true)
+                
+#### 2) 等待/通知机制
+> - 同样利用wait()和notify()机制，但是使用上比synchronized更加方便
+> - 借助Condition对象，可以有选择性地对某些线程进行等待await()/通知signial()/signialAll()，而且必须在lock()方法和unlock()方法中间使用，否则会报错
+> - 创建condition
+                    
+                public class ThreadA extends Thread{
+                    private Lock lock = new ReentranLock();
+                    public Condition condition = lock.newCondition();
+                    public a {
+
+                    }
+
+                    public void run() {
+                        lock.lock();
+                        condition.await();
+                        // doSomething
+                        lock.unlock();
+                    }
+                }
+
+                // 执行类
+                ThreadA a = new ThreadA();
+                a.start();
+                Thread.sleep(3000);
+                a.signal();
+#### 3) 公平锁和非公平锁
+> - 公平锁 指的是线程获取锁的顺序是按照线程加锁的顺序分配的，先来先到的FIFO原则
+                
+                private Lock lock = new ReentranLock(isFair);
+> - 非公平锁 指的是获取锁的抢占机制，
+                
+
+<h3 id='4.3'>4.3 使用ReentrantReadWriteLock类</h3>
+            
+#### 1) 用法
+> - 读读共享
+                
+                public class ThreadA extends Thread{
+                    private ReentrantReadWriteLock lock = newReentrantReadWriteLock();
+                    public a {
+
+                    }
+
+                    public void run() {
+                        lock.readLock().lock();
+                        // doSomething
+                        lock.readLock().unlock();
+                    }
+                }
+
+> - 写写互斥
+                
+                public class ThreadA extends Thread{
+                    private ReentrantReadWriteLock lock = newReentrantReadWriteLock();
+                    public a {
+
+                    }
+
+                    public void run() {
+                        lock.writeLock().lock();
+                        // doSomething
+                        lock.writeLock().unlock();
+                    }
+                }   
+> - 读写互斥 在一个类中同时创建两种方法分别用上两种锁即可
+        
+------      
+        
+<h2 id='5'>五、其他</h2>
+<h3 id='5.1'>5.1 定时器</h3>
+            
+#### 1) 使用
+> - Boolean判断是否为守护线程，如果是守护的话，任务中的run()方法将不会被执行，所以一般为false
+                
+                public MyTask extends Timetask {
+                    @override
+                    public void run() {
+                        // dosomething
+                    }
+                }
+
+                // 执行类
+                MyTask task = new Mytask();
+                Timer timer = new Timer(Boolean); // Boolean判断是否为守护线程，如果是守护的话，任务中的run()方法将不会被执行，所以一般为false
+                timer.schedule(task, 执行时间点);
+> - 如果时间点被提前执行，则任务会被立即执行
+> - Timetask.cancel()会使再次执行相同的任务结束，但是当前任务会继续执行完，然后interval的时间会被取消
+                
+<h3 id='5.2'>5.2 Callable和Future</h3>
+            
+#### 1) Callable
+> - Callable与Runnable类似，用来封装异步方法
+> - 不同的是Callable有参数和返回值，而Runnable没有参数和返回值
+                
+                public interface Callable<V> {
+                    V call() throws Exception;
+                }
+#### 2) Future
+> - 用来保存异步计算的结果
+                
+                public interface Future<V> {
+                    V get() throws ..
+                    V get(long timeout, TimeUnit unit) throws ..
+                    void cancel(boolean mayInterrupt)
+                    boolean isCanceled()
+                    boolean isDone()
+                }
+#### 3) FutureTask
+> - FutureTask是一种很好用的包装器，可以将Callable转换成Future和Runnable
+> - 他同时实现了以上两个接口
+> - 例子
+                
+                Callable<Integer> myComputer = ...;
+                FutureTask<Integer> task = new FutureTask<Integer>(myComputer);
+                Thread t = new Thread(task);
+                t.start();
+                ...
+                Integer result = task.get();
+                
+<h3 id='5.3'>5.3 线程池</h3>
+            
+#### 1) 
