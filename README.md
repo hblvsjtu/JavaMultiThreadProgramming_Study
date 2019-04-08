@@ -16,6 +16,13 @@
 ### [2.2 线程安全与非线程安全](#2.2)
 ### [2.3 同步](#2.3)
 ### [2.4 volatile关键字](#2.4)
+## [三、线程间通讯](#3)
+### [3.1 等待/通知机制](#3.1)
+### [3.2 通过管道进行线程间通讯](#3.2)
+### [3.3 方法join 类ThreadLocal和类inheritableThreadLocal](#3.3)
+## [四、Lock的使用](#4)
+### [4.1 等待/通知机制](#4.1)
+### [4.2 通过管道进行线程间通讯](#4.2)
         
 ------      
         
@@ -191,7 +198,7 @@
 > - Waiting(等待) 
 > - Timed waiting(计时等待)
 > - Termianted(被终止)  
-> - ![图1-1 线程六种状态.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-1%20%E7%BA%BF%E7%A8%8B%E5%85%AD%E7%A7%8D%E7%8A%B6%E6%80%81.jpg?raw=true)
+>>>>>> ![图1-1 线程六种状态.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-1%20%E7%BA%BF%E7%A8%8B%E5%85%AD%E7%A7%8D%E7%8A%B6%E6%80%81.jpg?raw=true)
             
 #### 2) 线程属性
 > - 线程的优先级 可以使用setPriority方法提高或者降低任何一个线程的优先级，优先等级从1~10从低到高，普通的是5。这个设置优先级要慎重，因为如果有几个高优先级的线程没有进入活动状态，那么低优先级的线程就不会运行而被“饿死”。但是不是说一定要等等级高的执行完才执行优先级低的线程，只是说优先级高的线程所获得的资源比较多
@@ -228,7 +235,7 @@
 > - 除了可以锁this，还可以锁其他任意的对象作为“对象监视器”
 > - 优点：synchronized(非this)代码块中的程序和同步方法是异步的，不与其他锁的this同步方法争抢this锁，则可以大大提高效率
 > - 只要对象不变，即使对象的属性被改变，运行的结果还是同步的
-> - ![图1-2 同步代码块的三个结论.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-2%20%E5%90%8C%E6%AD%A5%E4%BB%A3%E7%A0%81%E5%9D%97%E7%9A%84%E4%B8%89%E4%B8%AA%E7%BB%93%E8%AE%BA.jpg?raw=true)
+>>>>>> ![图1-2 同步代码块的三个结论.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-2%20%E5%90%8C%E6%AD%A5%E4%BB%A3%E7%A0%81%E5%9D%97%E7%9A%84%E4%B8%89%E4%B8%AA%E7%BB%93%E8%AE%BA.jpg?raw=true)
 
 #### 6) 添加static
 > - 从表现来看，加跟不加没有什么本质的区别
@@ -570,7 +577,7 @@
                              
 #### 1) 一个死锁的case
 > - 程序设计的时候应该避免双方互相持有对象的锁的情况
-![图1-3 死锁的case.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-3%20%E6%AD%BB%E9%94%81%E7%9A%84case.jpg?raw=true)
+>>>>>> ![图1-3 死锁的case.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-3%20%E6%AD%BB%E9%94%81%E7%9A%84case.jpg?raw=true)
                 
         
 <h3 id='2.4'>2.4 volatile关键字</h3>  
@@ -583,4 +590,675 @@
 > - volatile关键字不会发生堵塞，而synchronized关键字会出现堵塞
 #### 3) volatile的非原子特性
 > - 变量在内存中的工作过程图
-![1-4 变量在内存中的工作过程.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-3%20%E6%AD%BB%E9%94%81%E7%9A%84case.jpg?raw=true)
+![1-4 变量在内存中的工作过程.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-4%20%E5%8F%98%E9%87%8F%E5%9C%A8%E5%86%85%E5%AD%98%E4%B8%AD%E7%9A%84%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B.jpg?raw=true)
+                
+
+        
+------      
+        
+<h2 id='3'>三、线程间通讯</h2>
+<h3 id='3.1'>3.1 等待/通知机制</h3>
+            
+#### 1) 不使用等待/通知机制实现线程间通讯
+> - 使用轮询机制 + 休眠中断
+> - 弊端：轮询机制非常的消耗资源
+                
+                // ThreadA类
+                package practice;
+
+                import java.util.ArrayList;
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 *
+                 */
+                public class ThreadA implements Runnable {
+
+                    private List<Integer> myList;
+
+                    /**
+                     * @param myList
+                     */
+                    public ThreadA() {
+                        super();
+                        this.myList = new ArrayList<Integer>();
+                    }
+                    
+
+                    /**
+                     * @return the list
+                     */
+                    public List<Integer> getMyList() {
+                        return myList;
+                    }
+
+
+                    /**
+                     * @param list the list to set
+                     */
+                    public void setList(List<Integer> myList) {
+                        this.myList = myList;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        for(int i=0; i<10; i++) {
+                            this.myList.add(i);
+                            System.out.println(Thread.currentThread().getName() + " 添加了元素：" + i);
+                        }
+                    }
+                }
+
+                // ThreadB类
+                /**
+                 * 
+                 */
+                package practice;
+
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 *
+                 */
+                public class ThreadB implements Runnable{
+
+                    /**
+                     * 
+                     */
+                    private List<Integer> myList;
+
+                    /**
+                     * @param myList
+                     */
+                    public ThreadB(List<Integer> myList) {
+                        super();
+                        this.myList = myList;
+                    }
+
+                    @Override
+                    public void run() {
+                        int length = 0;
+                        try {
+                            while(true) {
+                                if(this.myList.size() > 5) {
+                                    length = this.myList.size();
+                                    Thread.currentThread().interrupt();
+                                    throw new InterruptedException();
+                                }
+                            }
+                        }catch(InterruptedException e) {
+                            e.printStackTrace();
+                            System.out.println(Thread.currentThread().getName() + " 已经被停止，停止时元素数量为： " + length);
+                        }
+                    }
+                }
+
+                // 执行类
+                ThreadA a = new ThreadA();
+                ThreadB b = new ThreadB(a.getMyList());
+                Thread ta = new Thread(a, "ThreadA");
+                Thread tb = new Thread(b, "ThreadB");
+                ta.start();
+                tb.start();
+
+                // 控制台
+                ThreadA 添加了元素：0
+                ThreadA 添加了元素：1
+                ThreadA 添加了元素：2
+                ThreadA 添加了元素：3
+                ThreadA 添加了元素：4
+                ThreadA 添加了元素：5
+                ThreadA 添加了元素：6
+                ThreadA 添加了元素：7
+                ThreadA 添加了元素：8
+                ThreadA 添加了元素：9
+                java.lang.InterruptedException
+                    at practice.ThreadB.run(ThreadB.java:35)
+                    at java.base/java.lang.Thread.run(Thread.java:844)
+                ThreadB 已经被停止，停止时元素数量为： 6
+
+#### 2) 使用等待/通知机制实现线程间通讯
+> - 两者所在线程必须获得对象级别锁，否则会抛出IllegalMonitorStateException，它是RuntimeException的子类，所以不需要try-catch语句进行捕捉
+> - wait使线程停止运行，释放对象锁，在从wait方法返回前，线程需要与其他线程竞争重新获得锁
+> - 而notify使停止的线程继续运行。不是说运行notify就马上生效，而是要等notify所在的线程运行完后，当前线程才会释放锁
+> - 关键字synchronized把每个Object对象看作同步对象，而Java为每个Object都实现了wait()和notify()方法
+> - notify()每次只通知一个线程，如果有多个线程的话可以使用notifyAll()，优先级最高的那个最先被执行，但也可能会随机执行，因为这主要取决于JVM虚拟机的实现
+> - 注意sleep()不释放锁，他是同步的效果
+> - 在等待的时候遇到异常会提前释放锁，wait后面的代码不再执行
+> - wait(long time)等待一定的时间，如果超过规定的时间则自动唤醒
+> - 如果通知过早了，那么wait()就永远唤不醒了
+                
+                package practice;
+
+                import java.util.ArrayList;
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadA 类
+                 */
+                public class ThreadA implements Runnable {
+
+                    private List<Integer> myList;
+
+                    /**
+                     * @param myList
+                     */
+                    public ThreadA() {
+                        super();
+                        this.myList = new ArrayList<Integer>();
+                    }
+                    
+
+                    /**
+                     * @return the list
+                     */
+                    public List<Integer> getMyList() {
+                        return myList;
+                    }
+
+
+                    /**
+                     * @param list the list to set
+                     */
+                    public void setMyList(List<Integer> myList) {
+                        this.myList = myList;
+                    }
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启");
+                        synchronized(myList) {
+                            System.out.println(Thread.currentThread().getName() + " 进入对象锁的第一行");
+                            for(int i=0; i<10; i++) {
+                                this.myList.add(i);
+                                System.out.println(Thread.currentThread().getName() + " 添加了元素：" + i);
+                                if (this.myList.size() == 5) {
+                                    myList.notify();
+                                    System.out.println("已经发出通知，相应的线程被停止，停止时元素数量为： " + i);
+                                }
+                            }
+                            System.out.println(Thread.currentThread().getName() + " 退出对象锁");
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+
+                
+                package practice;
+
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadB 类
+                 */
+                public class ThreadB implements Runnable{
+
+                    /**
+                     * 
+                     */
+                    private List<Integer> myList;
+
+                    /**
+                     * @param lock
+                     */
+                    public ThreadB() {
+                        super();
+                    }
+
+
+                    /**
+                     * @return the myList
+                     */
+                    public List<Integer> getMyList() {
+                        return myList;
+                    }
+
+
+                    /**
+                     * @param myList the myList to set
+                     */
+                    public void setMyList(List<Integer> myList) {
+                        this.myList = myList;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启 ");
+                        synchronized (myList) {
+                            System.out.println(Thread.currentThread().getName() + " 进入对象锁的第一行");
+                            try {
+                                myList.wait();
+                                Thread.currentThread().interrupt();
+                                throw new InterruptedException();
+                            }catch(InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println(Thread.currentThread().getName() + " 退出对象锁");
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+
+                // 执行类
+                ThreadA a = new ThreadA();
+                ThreadB b = new ThreadB();
+                b.setMyList(a.getMyList());
+                Thread ta = new Thread(a, "ThreadA");
+                Thread tb = new Thread(b, "ThreadB");
+                tb.start();
+                ta.start();
+
+                // 控制台
+                ThreadB 进入对象锁的第一行
+                ThreadA 进入对象锁的第一行
+                ThreadA 添加了元素：0
+                ThreadA 添加了元素：1
+                ThreadA 添加了元素：2
+                ThreadA 添加了元素：3
+                ThreadA 添加了元素：4
+                已经发出通知，相应的线程被停止，停止时元素数量为： 4
+                ThreadA 添加了元素：5
+                ThreadA 添加了元素：6
+                ThreadA 添加了元素：7
+                ThreadA 添加了元素：8
+                ThreadA 添加了元素：9
+                ThreadA 退出对象锁
+                ThreadA 退出
+                java.lang.InterruptedException
+                    at practice.ThreadB.run(ThreadB.java:51)
+                    at java.base/java.lang.Thread.run(Thread.java:844)
+                ThreadB 退出对象锁
+                ThreadB 退出
+
+#### 3) 线程状态切换
+> - 线程进入Runnable的原因
+>> - 调用sleep()方法经过一定时间后返回
+>> - 线程调用的阻塞IO已经返回，阻塞方法执行完毕
+>> - 线程获得了试图同步的监视器
+>> - 线程正在等待某个消息，其他线程发出了通知
+>> - 处于挂起的线程调用了resume()方法  
+> - 线程出现阻塞的原因
+>> - 调用sleep()方法
+>> - 线程调用的阻塞IO
+>> - 线程试图获得了试图同步的监视器，但是被其他线程所占有
+>> - 线程正在等待某个消息
+>> - 使用suspend()被挂起
+> - 每个所对象都有两个队列，一个是就绪队列，另一个是阻塞队列
+>>>>>> ![图1-5 线程状态切换.jpg](https://github.com/hblvsjtu/JavaMultiThreadProgramming_Study/blob/master/picture/%E5%9B%BE1-4%20%E5%8F%98%E9%87%8F%E5%9C%A8%E5%86%85%E5%AD%98%E4%B8%AD%E7%9A%84%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B.jpg?raw=true)
+
+            
+<h3 id='3.2'>3.2 通过管道进行线程间通讯</h3>
+            
+#### 1) 介绍
+> - 管道流是一种特殊的流，用于不同线程间直接传送数据
+> - 无需借助于临时文件之类的东西
+#### 2) 字节流
+> - PipedInputStream & PipedOutputStream
+> - 由于线程B一开始没有数据写入，所以遇到输入输出的语句时线程被阻塞，直到有数据写入
+> - 每次输入对应一次输出
+                
+                package practice;
+
+                import java.io.IOException;
+                import java.io.PipedOutputStream;
+                import java.util.ArrayList;
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadA类
+                 */
+                public class ThreadA implements Runnable {
+
+                    private List<Integer> myList;
+                    private PipedOutputStream out;
+
+                    /**
+                     * @param myList
+                     */
+                    public ThreadA() {
+                        super();
+                        this.myList = new ArrayList<Integer>();
+                        this.out = new PipedOutputStream();
+                    }
+                    
+
+                    /**
+                     * @return the list
+                     */
+                    public List<Integer> getMyList() {
+                        return myList;
+                    }
+
+
+                    /**
+                     * @param list the list to set
+                     */
+                    public void setMyList(List<Integer> myList) {
+                        this.myList = myList;
+                    }
+
+                    
+                    /**
+                     * @return the out
+                     */
+                    public PipedOutputStream getOut() {
+                        return out;
+                    }
+
+
+                    /**
+                     * @param out the out to set
+                     */
+                    public void setOut(PipedOutputStream out) {
+                        this.out = out;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启");
+                        for(int i=0; i<10; i++) {
+                            this.myList.add(i);
+                            System.out.println(Thread.currentThread().getName() + " 添加了元素：" + i);
+                            if (this.myList.size() == 5) {
+                                System.out.println(Thread.currentThread().getName() + " 进入判断的第一行");
+                                try {
+                                    this.out.write(5);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                System.out.println("已经发出通知，相应的线程被停止，停止时元素数量为： " + i);
+                            }
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出循环");
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+                package practice;
+
+                import java.io.IOException;
+                import java.io.PipedInputStream;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadB类
+                 */
+                public class ThreadB implements Runnable{
+
+
+                    private PipedInputStream in;
+
+                    public ThreadB() {
+                        super();
+                        this.in = new PipedInputStream();
+                    }
+
+                    /**
+                     * @return the in
+                     */
+                    public PipedInputStream getIn() {
+                        return in;
+                    }
+
+
+                    /**
+                     * @param in the in to set
+                     */
+                    public void setIn(PipedInputStream in) {
+                        this.in = in;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启 ");
+                        try {
+                            if (in.read() != -1) {
+                                System.out.println(Thread.currentThread().getName() + " 进入判断的第一行");
+                                try {
+                                    Thread.currentThread().interrupt();
+                                    throw new InterruptedException();
+                                }catch(InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                System.out.println(Thread.currentThread().getName() + " 退出判断");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+                // 执行类
+                ThreadA a = new ThreadA();
+                ThreadB b = new ThreadB();
+                a.getOut().connect(b.getIn());
+                Thread ta = new Thread(a, "ThreadA");
+                Thread tb = new Thread(b, "ThreadB");
+                tb.start();
+                ta.start();
+
+                // 控制台
+                ThreadA 添加了元素：0
+                ThreadA 添加了元素：1
+                ThreadA 添加了元素：2
+                ThreadA 添加了元素：3
+                ThreadA 添加了元素：4
+                ThreadA 进入判断的第一行
+                已经发出通知，相应的线程被停止，停止时元素数量为： 4
+                ThreadA 添加了元素：5
+                ThreadA 添加了元素：6
+                ThreadA 添加了元素：7
+                ThreadA 添加了元素：8
+                ThreadA 添加了元素：9
+                ThreadA 退出循环
+                ThreadA 退出
+                ThreadB 进入判断的第一行
+                java.lang.InterruptedException
+                    at practice.ThreadB.run(ThreadB.java:52)
+                    at java.base/java.lang.Thread.run(Thread.java:844)
+                ThreadB 退出判断
+                ThreadB 退出
+
+                //只输出一次和接收一次
+                package practice;
+
+                import java.io.IOException;
+                import java.io.PipedOutputStream;
+                import java.util.ArrayList;
+                import java.util.List;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadA类
+                 */
+                public class ThreadA implements Runnable {
+
+                    private List<Integer> myList;
+                    private PipedOutputStream out;
+
+                    /**
+                     * @param myList
+                     */
+                    public ThreadA() {
+                        super();
+                        this.myList = new ArrayList<Integer>();
+                        this.out = new PipedOutputStream();
+                    }
+                    
+
+                    /**
+                     * @return the list
+                     */
+                    public List<Integer> getMyList() {
+                        return myList;
+                    }
+
+
+                    /**
+                     * @param list the list to set
+                     */
+                    public void setMyList(List<Integer> myList) {
+                        this.myList = myList;
+                    }
+
+                    
+                    /**
+                     * @return the out
+                     */
+                    public PipedOutputStream getOut() {
+                        return out;
+                    }
+
+
+                    /**
+                     * @param out the out to set
+                     */
+                    public void setOut(PipedOutputStream out) {
+                        this.out = out;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启");
+                        for(int i=0; i<10; i++) {
+                            this.myList.add(i);
+                            System.out.println(Thread.currentThread().getName() + " 添加了元素：" + i);
+                            try {
+                                this.out.write(i);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        try {
+                            this.out.close();
+                            System.out.println(Thread.currentThread().getName() + " 退出循环，关闭输出流");
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+                package practice;
+
+                import java.io.IOException;
+                import java.io.PipedInputStream;
+
+                /**
+                 * @author LvHongbin
+                 * ThreadB类
+                 */
+                public class ThreadB implements Runnable{
+
+
+                    private PipedInputStream in;
+
+                    public ThreadB() {
+                        super();
+                        this.in = new PipedInputStream();
+                    }
+
+                    /**
+                     * @return the in
+                     */
+                    public PipedInputStream getIn() {
+                        return in;
+                    }
+
+
+                    /**
+                     * @param in the in to set
+                     */
+                    public void setIn(PipedInputStream in) {
+                        this.in = in;
+                    }
+
+
+                    @Override
+                    public void run() {
+                        System.out.println(Thread.currentThread().getName() + " 开启 ");
+                        int num = 0;
+                        try {
+                            num = in.read();
+                            System.out.println(Thread.currentThread().getName() + " 添加了元素：" + num);
+                            if (num == 5) {
+                                System.out.println(Thread.currentThread().getName() + " 进入判断的第一行");
+                                try {
+                                    Thread.currentThread().interrupt();
+                                    throw new InterruptedException();
+                                }catch(InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                System.out.println(Thread.currentThread().getName() + " 退出判断");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            System.out.println("已经发出通知，相应的线程被停止，停止时元素数量为： " + num);
+                        }
+                        System.out.println(Thread.currentThread().getName() + " 退出");
+                    }
+                }
+
+                //执行类
+                ThreadA a = new ThreadA();
+                ThreadB b = new ThreadB();
+                a.getOut().connect(b.getIn());
+                Thread ta = new Thread(a, "ThreadA");
+                Thread tb = new Thread(b, "ThreadB");
+                tb.start();
+                ta.start();
+
+                // 控制台
+                ThreadB 开启 
+                ThreadA 开启
+                ThreadA 添加了元素：0
+                ThreadA 添加了元素：1
+                ThreadA 添加了元素：2
+                ThreadA 添加了元素：3
+                ThreadA 添加了元素：4
+                ThreadA 添加了元素：5
+                ThreadA 添加了元素：6
+                ThreadA 添加了元素：7
+                ThreadA 添加了元素：8
+                ThreadA 添加了元素：9
+                ThreadA 退出循环，关闭输出流
+                ThreadB 添加了元素：0
+                ThreadA 退出
+                ThreadB 退出
+#### 3) 字符流
+> - PipedReader & PipedWriter
+> - 
+<h3 id='3.3'>3.3 方法join 类ThreadLocal和类inheritableThreadLocal</h3>
+            
+#### 1) 方法join
+> - 对被作用的线程继续运行run()方法，而其他线程则无限期延长，直至被作用的方法已经执行完毕
+> - 有种同步的感觉，跟synchronied不同的是，join实在内部使用wait()方法，继而释放锁，其他线程可以执行其同步的方法。而synchronied则是“对象监视器”原理
+> - join(long)则内置wait(long)
+#### 2) 类ThreadLocal
+> - 一般来讲类的静态实例域就是全局变量，放在堆中，而类ThreadLocal则是为每个线程创建绑定自己的值
+> - 初值为null，可以覆写该类的initialValue来改写初值
+                
+                public static ThreadLocal t1 = new ThreadLocal();
+                t1.set(...);
+                t1.get();
+#### 3) 类inheritableThreadLocal
+> - 可以在子线程中获取父线程中的值
+
+<h3 id='3.4'>3.4 类inheritableThreadLocal的使用</h3>
+            
+#### 1) 对象锁
+> - 
